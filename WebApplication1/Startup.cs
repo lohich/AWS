@@ -2,6 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
+using Amazon;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -11,6 +16,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+
+using WebApplication1.Services;
 
 namespace WebApplication1
 {
@@ -28,6 +35,11 @@ namespace WebApplication1
         {
             services.AddControllers();
             services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo {Title = "AWS", Version = "v1"}));
+
+            services.AddScoped(x => new AmazonDynamoDBConfig {ServiceURL = Configuration.GetValue<string>("DynamoDBConnectionString") });
+            services.AddScoped<IAmazonDynamoDB, AmazonDynamoDBClient>();
+            services.AddScoped<DynamoDBContext>();
+            services.AddScoped<IBooksService, BooksService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

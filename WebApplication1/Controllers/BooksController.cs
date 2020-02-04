@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-using Microsoft.AspNetCore.Mvc;
-
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using WebApplication1.Models;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
@@ -11,34 +10,41 @@ namespace WebApplication1.Controllers
     [Route("Books")]
     public class BooksController : Controller
     {
-        [HttpGet("{isbn}")]
-        public Book Get(string isbn)
+        private readonly IBooksService _booksService;
+
+        public BooksController(IBooksService booksService)
         {
-            return new Book();
+            _booksService = booksService;
+        }
+
+        [HttpGet("{isbn}")]
+        public async Task<Book> Get(string isbn)
+        {
+            return await _booksService.GetByIsbn(isbn);
         }
 
         [HttpGet]
-        public IEnumerable<Book> Get()
+        public async Task<IEnumerable<Book>> Get()
         {
-            return Enumerable.Empty<Book>();
+            return await _booksService.GetAll();
         }
 
         [HttpDelete("{isbn}")]
-        public void Delete(string isbn)
+        public async void Delete(string isbn)
         {
-            
+            await _booksService.Remove(isbn);
         }
 
         [HttpPost]
-        public Book Post([FromBody]Book item)
+        public async Task<Book> Post([FromBody]Book item)
         {
-            return new Book();
+            return await _booksService.Add(item);
         }
 
         [HttpPut("{isbn}")]
-        public Book Get(string isbn, [FromBody]Book item)
+        public async Task<Book> Put(string isbn, [FromBody]Book item)
         {
-            return new Book();
+            return await _booksService.Update(isbn, item);
         }
     }
 }
