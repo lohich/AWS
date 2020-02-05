@@ -18,6 +18,7 @@ jobs:
 
   deploy:
     needs: [build]
+    runs-on: ubuntu-latest
     steps:
     - uses: chrislennon/action-aws-cli@v1.1
     - run: aws dynamodb list-tables
