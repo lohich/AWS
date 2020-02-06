@@ -1,0 +1,8 @@
+version: 0.0
+os: linux
+files:
+    - source:
+      destionation: /opt/books
+hooks:
+    ApplicationStart: Deployment/Run.sh
+    ApplicationStop: Deployment/Stop.sh
