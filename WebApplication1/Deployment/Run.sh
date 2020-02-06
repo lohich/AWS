@@ -1,1 +1,1 @@
-dotnet /opt/books/WebApplication1.dll
+systemctl start Books

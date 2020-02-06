@@ -1,0 +1,7 @@
+[Unit]
+Description=AWS Books
+
+[Service]
+WorkingDirectory=/opt/books
+ExecStart=/usr/bin/dotnet /opt/books/WebApplication1
+User=ec2-user
