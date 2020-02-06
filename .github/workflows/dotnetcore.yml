@@ -27,4 +27,5 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-central-1
     - uses: chrislennon/action-aws-cli@v1.1
-    - run: aws dynamodb list-tables
+    - name: Install dotnet core
+      run: aws dynamodb list-tables
