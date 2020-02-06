@@ -1,7 +1,10 @@
 [Unit]
-Description=AWS Books
+Description=Books
 
 [Service]
 WorkingDirectory=/opt/books
-ExecStart=/usr/bin/dotnet /opt/books/WebApplication1
+ExecStart=/usr/bin/dotnet /opt/books/WebApplication1.dll
 User=ec2-user
+
+[Install]
+WantedBy=multi-user.target
