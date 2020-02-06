@@ -1,1 +1,1 @@
-dotnet WebApplication1.dll
+dotnet /opt/books/WebApplication1.dll
