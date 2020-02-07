@@ -52,6 +52,7 @@ namespace WebApplication1
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.UseMiddleware<SQSMiddleware>();
 
             app.UseRouting();
 
@@ -61,8 +62,6 @@ namespace WebApplication1
                              {
                                  endpoints.MapControllers();
                              });
-
-            app.UseMiddleware<SQSMiddleware>();
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DynamoDB"));

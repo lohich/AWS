@@ -11,7 +11,7 @@ namespace WebApplication1
         public static void Main(string[] args)
         {
 #if DEBUG
-            environment = "Development";
+            environment = "Release";
 #elif RELEASE
             environment = "Release";
 #endif
