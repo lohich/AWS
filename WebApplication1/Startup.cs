@@ -1,5 +1,6 @@
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
+using Amazon.SQS;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 
+using WebApplication1.Infrastructure;
 using WebApplication1.Services;
 
 namespace WebApplication1
@@ -25,11 +27,20 @@ namespace WebApplication1
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo {Title = "AWS", Version = "v1"}));
+            services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo {Title = "Books", Version = "v1"}));
 
-            services.AddScoped(x => new AmazonDynamoDBConfig {ServiceURL = Configuration.GetValue<string>("DynamoDBConnectionString") });
+            services.AddScoped(x => new AmazonDynamoDBConfig
+                                    {ServiceURL = Configuration.GetValue<string>("DynamoDBConnectionString")});
             services.AddScoped<IAmazonDynamoDB, AmazonDynamoDBClient>();
             services.AddScoped<DynamoDBContext>();
+
+            services.AddScoped(x => new AmazonSQSConfig
+                                    {ServiceURL = Configuration.GetValue<string>("SQSConnectionString")});
+            services.AddScoped<AmazonSQSClient>();
+            services.AddScoped<SQSMiddleware>();
+            
+            services.AddScoped(x => Configuration);
+
             services.AddScoped<IBooksService, BooksService>();
         }
 
@@ -41,16 +52,16 @@ namespace WebApplication1
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
-
             app.UseRouting();
 
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
+                             {
+                                 endpoints.MapControllers();
+                             });
+
+            app.UseMiddleware<SQSMiddleware>();
 
             app.UseSwagger();
             app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "DynamoDB"));
