@@ -4,6 +4,9 @@ using Amazon.DynamoDBv2.DataModel;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
+using Amazon.DynamoDBv2.DocumentModel;
+
 using WebApplication1.Models;
 
 namespace WebApplication1.Services
@@ -19,7 +22,7 @@ namespace WebApplication1.Services
 
         public async Task<IEnumerable<Book>> GetAll()
         {
-            throw new NotImplementedException();
+            return await _client.ScanAsync<Book>(new List<ScanCondition>()).GetRemainingAsync();
         }
 
         public async Task<Book> GetByIsbn(string isbn)
