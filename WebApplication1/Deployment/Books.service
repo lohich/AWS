@@ -3,7 +3,7 @@ Description=Books
 
 [Service]
 WorkingDirectory=/opt/books
-ExecStart=/usr/bin/dotnet /opt/books/WebApplication1.dll
+ExecStart=/usr/bin/dotnet /opt/books/WebApplication1.dll --urls=http://0.0.0.0:5000
 User=ec2-user
 
 [Install]

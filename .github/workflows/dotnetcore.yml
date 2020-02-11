@@ -8,13 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        dotnet-version: '3.1.100'
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-central-1
+    - uses: chrislennon/action-aws-cli@v1.1
+    - name: Build
+      run: aws codebuild start-build --project-name Books
 
   deploy:
     needs: [build]
@@ -27,5 +29,5 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: eu-central-1
     - uses: chrislennon/action-aws-cli@v1.1
-    - name: Install dotnet core
-      run: aws dynamodb list-tables
+    - name: Deploy
+      run: aws deploy create-deployment --application-name Books --s3-location bucket=lohich,key=Books,bundleType=zip --deployment-group-name First
