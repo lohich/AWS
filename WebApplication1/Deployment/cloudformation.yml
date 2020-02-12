@@ -1,5 +1,5 @@
 Parameters:
-  DeployKey:
+  EC2AccessKey:
     Description: SSH key
     Type: "AWS::EC2::KeyPair::KeyName"
 
@@ -11,6 +11,13 @@ Resources:
       AccessControl: Private
 
   AppHost:
+    DependsOn:
+      - ClouformationUser
+      - SecurityGroup
+      - SSHSecurityGroup
+      - dynamodbTable
+      - sqsQueue
+      - CodeDeployInstanceProfile
     Type: AWS::EC2::Instance
     Properties:
       ImageId: "ami-0f4bbc925efd23616"
@@ -18,10 +25,20 @@ Resources:
       SecurityGroups:
         - !Ref SecurityGroup
         - !Ref SSHSecurityGroup
-      KeyName: !Ref DeployKey
+      KeyName: !Ref EC2AccessKey
       Tags:
         - Key: Name
-          Value: Second
+          Value: AppHost
+      IamInstanceProfile: !Ref CodeDeployInstanceProfile
+      UserData:
+        Fn::Base64: !Sub |
+          sudo yum update
+          sudo yum install ruby
+          sudo yum install wget
+          cd /home/ec2-user
+          wget https://aws-codedeploy-eu-central-1.s3.eu-central-1.amazonaws.com/latest/install
+          chmod +x ./install
+          sudo ./install auto
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -52,6 +69,10 @@ Resources:
       QueueName: Books
 
   QueueReader:
+    DependsOn:
+      - sqsQueue
+      - s3Bucket
+      - LambdaRole
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: "QueueReader"
@@ -67,6 +88,9 @@ Resources:
       MemorySize: 512
       Timeout: 15
   LambdaTrigger:
+    DependsOn:
+      - QueueReader
+      - sqsQueue
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       EventSourceArn:
@@ -78,7 +102,38 @@ Resources:
           - "QueueReader"
           - "Arn"
 
-  #roles
+  CodeDeploy:
+    Type: "AWS::CodeDeploy::Application"
+    Properties:
+      ApplicationName: Books
+  DeploymentGroup:
+    DependsOn:
+      - CodeDeploy
+      - CodeDeplpoyRole
+      - AppHost
+    Type: "AWS::CodeDeploy::DeploymentGroup"
+    Properties:
+      ApplicationName: !Ref CodeDeploy
+      ServiceRoleArn: !GetAtt CodeDeplpoyRole.Arn
+      DeploymentGroupName: AppHosts
+      Ec2TagFilters:
+        - Key: Name
+          Value: AppHost
+          Type: KEY_AND_VALUE
+
+  ClouformationUser:
+    Type: AWS::IAM::User
+    Properties:
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+        - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+      UserName: AppUser
+  AppAccessKey:
+    Type: AWS::IAM::AccessKey
+    Properties:
+      UserName: !Ref ClouformationUser
+
   LambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -93,8 +148,29 @@ Resources:
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
+  CodeDeplpoyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "codedeploy.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+  CodeDeployInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "ec2.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
 
-  #policies
   LambdaExcecutionPolicy:
     DependsOn:
       - "LambdaRole"
@@ -111,8 +187,24 @@ Resources:
               - "arn:aws:logs:*:*:*"
       Roles:
         - !Ref LambdaRole
+  CodeDeployPolicy:
+    DependsOn:
+      - CodeDeployInstanceRole
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: "CodeDeployEC2Permisions"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:Get*"
+              - "s3:List*"
+            Resource:
+              - "*"
+      Roles:
+        - !Ref CodeDeployInstanceRole
 
-  #common
   SSHSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -122,3 +214,12 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+
+  CodeDeployInstanceProfile:
+    DependsOn:
+      - CodeDeployInstanceRole
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref CodeDeployInstanceRole
