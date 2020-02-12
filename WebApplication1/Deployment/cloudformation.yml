@@ -30,15 +30,19 @@ Resources:
         - Key: Name
           Value: AppHost
       IamInstanceProfile: !Ref CodeDeployInstanceProfile
-      UserData:
-        Fn::Base64: !Sub |
-          sudo yum update
-          sudo yum install ruby
-          sudo yum install wget
-          cd /home/ec2-user
-          wget https://aws-codedeploy-eu-central-1.s3.eu-central-1.amazonaws.com/latest/install
-          chmod +x ./install
-          sudo ./install auto
+      UserData: !Base64
+        Fn::Join:
+          - ""
+          - - |
+              #!/bin/bash -ex
+            - |
+              cd /home/ec2-user
+            - |
+              aws s3 cp 's3://aws-codedeploy-eu-central-1/latest/codedeploy-agent.noarch.rpm' . --region eu-central-1
+            - |
+              yum -y ruby
+            - |
+              yum -y install codedeploy-agent.noarch.rpm
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -109,12 +113,12 @@ Resources:
   DeploymentGroup:
     DependsOn:
       - CodeDeploy
-      - CodeDeplpoyRole
+      - CodeDeployRole
       - AppHost
     Type: "AWS::CodeDeploy::DeploymentGroup"
     Properties:
       ApplicationName: !Ref CodeDeploy
-      ServiceRoleArn: !GetAtt CodeDeplpoyRole.Arn
+      ServiceRoleArn: !GetAtt CodeDeployRole.Arn
       DeploymentGroupName: AppHosts
       Ec2TagFilters:
         - Key: Name
@@ -148,7 +152,7 @@ Resources:
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
-  CodeDeplpoyRole:
+  CodeDeployRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -159,6 +163,8 @@ Resources:
               Service: "codedeploy.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
   CodeDeployInstanceRole:
     Type: AWS::IAM::Role
     Properties:
