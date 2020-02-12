@@ -1,0 +1,124 @@
+Parameters:
+  DeployKey:
+    Description: SSH key
+    Type: "AWS::EC2::KeyPair::KeyName"
+
+Resources:
+  s3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: lohich
+      AccessControl: Private
+
+  AppHost:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: "ami-0f4bbc925efd23616"
+      InstanceType: t2.micro
+      SecurityGroups:
+        - !Ref SecurityGroup
+        - !Ref SSHSecurityGroup
+      KeyName: !Ref DeployKey
+      Tags:
+        - Key: Name
+          Value: Second
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: dotnet port
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: 0.0.0.0/0
+
+  dynamodbTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: "ISBN"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "ISBN"
+          KeyType: "HASH"
+      TableName: "books"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  sqsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: Books
+
+  QueueReader:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: "QueueReader"
+      Handler: AWSLambda1::AWSLambda1.Function::FunctionHandler
+      Role:
+        Fn::GetAtt:
+          - "LambdaRole"
+          - "Arn"
+      Runtime: dotnetcore2.1
+      Code:
+        S3Bucket: lohichwow
+        S3Key: lambda.zip
+      MemorySize: 512
+      Timeout: 15
+  LambdaTrigger:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn:
+        Fn::GetAtt:
+          - "sqsQueue"
+          - "Arn"
+      FunctionName:
+        Fn::GetAtt:
+          - "QueueReader"
+          - "Arn"
+
+  #roles
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
+
+  #policies
+  LambdaExcecutionPolicy:
+    DependsOn:
+      - "LambdaRole"
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: "LambdaExecutionPolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "logs:*"
+            Resource:
+              - "arn:aws:logs:*:*:*"
+      Roles:
+        - !Ref LambdaRole
+
+  #common
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
