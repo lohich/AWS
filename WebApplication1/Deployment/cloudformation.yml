@@ -73,7 +73,7 @@ Resources:
 
   QueueReader:
     DependsOn:
-      - sqsQueue
+      - SqsQueue
       - s3Bucket
       - LambdaRole
     Type: AWS::Lambda::Function
@@ -93,12 +93,12 @@ Resources:
   LambdaTrigger:
     DependsOn:
       - QueueReader
-      - sqsQueue
+      - SqsQueue
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       EventSourceArn:
         Fn::GetAtt:
-          - "sqsQueue"
+          - "SqsQueue"
           - "Arn"
       FunctionName:
         Fn::GetAtt:
