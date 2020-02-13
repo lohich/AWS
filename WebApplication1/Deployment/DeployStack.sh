@@ -2,5 +2,5 @@ aws cloudformation deploy --template-file ./WebApplication1/Deployment/cloudform
 if [ $? -eq 0 ] || [ $? -eq 255 ]; then
     exit 0
 else
-    exit 1
+    exit $?
 fi
