@@ -14,9 +14,9 @@ Resources:
     DependsOn:
       - SecurityGroup
       - SSHSecurityGroup
-      - dynamodbTable
-      - sqsQueue
-      - CodeDeployInstanceProfile
+      - DynamodbTable
+      - SqsQueue
+      - Ec2InstanceProfile
     Type: AWS::EC2::Instance
     Properties:
       ImageId: "ami-0f4bbc925efd23616"
@@ -28,7 +28,7 @@ Resources:
       Tags:
         - Key: Name
           Value: AppHost
-      IamInstanceProfile: !Ref CodeDeployInstanceProfile
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       UserData: !Base64
         Fn::Join:
           - ""
@@ -52,7 +52,7 @@ Resources:
           ToPort: 5000
           CidrIp: 0.0.0.0/0
 
-  dynamodbTable:
+  DynamodbTable:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
@@ -66,7 +66,7 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
 
-  sqsQueue:
+  SqsQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: Books
@@ -151,7 +151,7 @@ Resources:
       Path: "/"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
-  CodeDeployInstanceRole:
+  Ec2InstanceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -184,7 +184,7 @@ Resources:
         - !Ref LambdaRole
   CodeDeployPolicy:
     DependsOn:
-      - CodeDeployInstanceRole
+      - Ec2InstanceRole
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: "CodeDeployEC2Permisions"
@@ -198,7 +198,7 @@ Resources:
             Resource:
               - "*"
       Roles:
-        - !Ref CodeDeployInstanceRole
+        - !Ref Ec2InstanceRole
 
   SSHSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -210,11 +210,11 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
 
-  CodeDeployInstanceProfile:
+  Ec2InstanceProfile:
     DependsOn:
-      - CodeDeployInstanceRole
+      - Ec2InstanceRole
     Type: AWS::IAM::InstanceProfile
     Properties:
       Path: "/"
       Roles:
-        - !Ref CodeDeployInstanceRole
+        - !Ref Ec2InstanceRole
