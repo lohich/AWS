@@ -40,7 +40,7 @@ Resources:
             - |
               aws s3 cp 's3://aws-codedeploy-eu-central-1/latest/codedeploy-agent.noarch.rpm' . --region eu-central-1
             - |
-              yum -y ruby
+              yum -y install ruby
             - |
               yum -y install codedeploy-agent.noarch.rpm
   SecurityGroup:
