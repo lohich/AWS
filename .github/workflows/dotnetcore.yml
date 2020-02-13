@@ -34,4 +34,4 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
       - name: Deploy
-        run: aws deploy create-deployment --application-name Books --s3-location bucket=lohichwow,key=Books,bundleType=zip --deployment-group-name AppHosts
+        run: aws deploy create-deployment --application-name Books --s3-location bucket=lohichwow,key=Books.zip,bundleType=zip --deployment-group-name AppHosts
