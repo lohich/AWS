@@ -12,7 +12,6 @@ Resources:
 
   AppHost:
     DependsOn:
-      - ClouformationUser
       - SecurityGroup
       - SSHSecurityGroup
       - dynamodbTable
@@ -125,19 +124,6 @@ Resources:
           Value: AppHost
           Type: KEY_AND_VALUE
 
-  ClouformationUser:
-    Type: AWS::IAM::User
-    Properties:
-      Path: /
-      ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
-        - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-      UserName: AppUser
-  AppAccessKey:
-    Type: AWS::IAM::AccessKey
-    Properties:
-      UserName: !Ref ClouformationUser
-
   LambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -176,6 +162,9 @@ Resources:
               Service: "ec2.amazonaws.com"
             Action: "sts:AssumeRole"
       Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonSQSFullAccess"
+        - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 
   LambdaExcecutionPolicy:
     DependsOn:
