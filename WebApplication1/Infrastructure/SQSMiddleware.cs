@@ -24,7 +24,7 @@ namespace WebApplication1.Infrastructure
         {
             var queue = await _client.GetQueueUrlAsync(_configuration.GetValue<string>("SQSQueueName"));
             
-            await _client.SendMessageAsync(queue.QueueUrl, context.Request.Path.Value);
+            await _client.SendMessageAsync(queue.QueueUrl, $"{context.Request.Method} {context.Request.Path.Value}");
 
             await next(context);
         }
