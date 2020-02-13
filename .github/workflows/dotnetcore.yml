@@ -21,7 +21,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-central-1
       - run: aws s3 cp lambda.zip s3://lohichwow/lambda.zip
-      - run: aws cloudformation deploy --template-file ./WebApplication1/Deployment/cloudformation.yml --stack-name Second
+      - run: ./WebApplication1/Deployment/DeployStack.sh
 
   build:
     runs-on: ubuntu-latest
