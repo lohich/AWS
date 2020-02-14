@@ -2,10 +2,10 @@ using Amazon.Lambda.Core;
 using Amazon.Lambda.SQSEvents;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Newtonsoft.Json;
 using System;
-using System.IO;
-using System.Text;
 using System.Threading.Tasks;
+using WebApplication1.Models;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
@@ -46,27 +46,11 @@ namespace AWSLambda1
         {
             try
             {
-                string fileContent;
-                try
-                {
-                    var file = await S3Client.GetObjectAsync("lohich", "log.txt");
-                    var streamReader = new StreamReader(file.ResponseStream);
-                    fileContent = await streamReader.ReadToEndAsync();
-                }
-                catch (AmazonS3Exception)
-                {
-                    fileContent = "";
-                }
-
-                var content = new StringBuilder(fileContent);
                 foreach (var item in evnt.Records)
                 {
-                    content.Append(DateTime.Now);
-                    content.Append(" ");
-                    content.AppendLine(item.Body);
+                    var book = JsonConvert.DeserializeObject<Book>(item.Body);
+                    await S3Client.PutObjectAsync(new PutObjectRequest { BucketName = "lohich", Key = $"{book.ISBN}.json", ContentBody = item.Body });
                 }
-
-                await S3Client.PutObjectAsync(new PutObjectRequest {BucketName = "lohich", Key = "log.txt", ContentBody = content.ToString()});
 
                 return null;
             }

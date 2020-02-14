@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 
 using Amazon.SQS;
@@ -22,9 +23,16 @@ namespace WebApplication1.Infrastructure
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var queue = await _client.GetQueueUrlAsync(_configuration.GetValue<string>("SQSQueueName"));
-            
-            await _client.SendMessageAsync(queue.QueueUrl, $"{context.Request.Method} {context.Request.Path.Value}");
+            if (context.Request.Method != "GET")
+            {
+                context.Request.EnableBuffering();
+                var queue = await _client.GetQueueUrlAsync(_configuration.GetValue<string>("SQSQueueName"));
+
+                var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
+                context.Request.Body.Position = 0;
+
+                await _client.SendMessageAsync(queue.QueueUrl, body);
+            }
 
             await next(context);
         }
