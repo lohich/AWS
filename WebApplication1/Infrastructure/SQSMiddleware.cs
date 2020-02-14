@@ -23,7 +23,7 @@ namespace WebApplication1.Infrastructure
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            if (context.Request.Method != "GET")
+            if (context.Request.Method != "GET" || context.Request.Method != "DELETE")
             {
                 context.Request.EnableBuffering();
                 var queue = await _client.GetQueueUrlAsync(_configuration.GetValue<string>("SQSQueueName"));
